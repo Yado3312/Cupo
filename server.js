@@ -1,8 +1,11 @@
 import 'dotenv/config'
 import express from 'express'
 import multer from 'multer'
+import { resolveMapCoordinates } from './map-links.js'
+import { summarizeWorkflowResponse } from './parking-occupancy.js'
 
 const app = express()
+app.use(express.json({ limit: '16kb' }))
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -17,13 +20,27 @@ const upload = multer({
 })
 
 const port = Number(process.env.API_PORT || 3001)
-const modelId = process.env.ROBOFLOW_MODEL_ID || 'coco/40'
+const workspace = process.env.ROBOFLOW_WORKSPACE || 'martinalan471-s-workspace'
+const workflowId = process.env.ROBOFLOW_WORKFLOW_ID || 'cupo'
+const imageInput = process.env.ROBOFLOW_WORKFLOW_IMAGE_INPUT || 'image'
 
 app.get('/api/status', (_request, response) => {
   response.json({
     configured: Boolean(process.env.ROBOFLOW_API_KEY),
-    model: modelId,
+    model: `${workspace}/workflows/${workflowId}`,
   })
+})
+
+app.post('/api/resolve-map-link', async (request, response) => {
+  try {
+    const location = await resolveMapCoordinates(request.body?.url)
+    response.json(location)
+  } catch (error) {
+    const isTimeout = error.name === 'TimeoutError'
+    response.status(isTimeout ? 504 : 422).json({
+      error: isTimeout ? 'El enlace del mapa tardó demasiado en responder.' : error.message,
+    })
+  }
 })
 
 app.post('/api/analyze', upload.single('image'), async (request, response) => {
@@ -37,54 +54,46 @@ app.post('/api/analyze', upload.single('image'), async (request, response) => {
     return
   }
 
-  const modelPath = modelId.split('/').map(encodeURIComponent).join('/')
+  const workflowPath = [workspace, workflowId].map(encodeURIComponent).join('/')
 
   try {
-    const inferenceResponse = await fetch(`https://serverless.roboflow.com/${modelPath}`, {
+    const inferenceResponse = await fetch(`https://serverless.roboflow.com/infer/workflows/${workflowPath}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${process.env.ROBOFLOW_API_KEY}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
       },
-      body: request.file.buffer.toString('base64'),
-      signal: AbortSignal.timeout(60_000),
+      body: JSON.stringify({
+        inputs: {
+          [imageInput]: {
+            type: 'base64',
+            value: request.file.buffer.toString('base64'),
+          },
+        },
+      }),
+      signal: AbortSignal.timeout(30_000),
     })
 
     const result = await inferenceResponse.json()
 
     if (!inferenceResponse.ok) {
-      response.status(inferenceResponse.status).json({
-        error: result.error || 'Roboflow no pudo analizar la imagen. Revisa el modelo y tu API key.',
-      })
+      response.status(inferenceResponse.status).json({ error: 'Roboflow rechazó la ejecución del Workflow. Verifica la API key, el nombre del workspace/workflow y sus créditos.' })
       return
     }
 
-    if (!Array.isArray(result.predictions)) {
-      response.status(502).json({ error: 'El modelo respondió en un formato inesperado.' })
+    const summary = summarizeWorkflowResponse(result)
+    if (!summary) {
+      response.status(502).json({ error: 'El Workflow respondió, pero no encontramos una salida de detecciones. Configura una salida llamada predictions o detections.' })
       return
     }
-
-    const vehicleClasses = new Set(['car', 'truck', 'bus', 'motorcycle', 'vehicle'])
-    const vehicles = result.predictions.filter((prediction) =>
-      vehicleClasses.has(String(prediction.class).toLowerCase()),
-    )
 
     response.json({
-      model: modelId,
-      image: result.image || null,
-      vehicleCount: vehicles.length,
-      detections: vehicles.map(({ x, y, width, height, class: label, confidence }) => ({
-        x,
-        y,
-        width,
-        height,
-        label,
-        confidence,
-      })),
+      model: `${workspace}/workflows/${workflowId}`,
+      ...summary,
     })
   } catch (error) {
     const message = error.name === 'TimeoutError'
-      ? 'Roboflow tardó demasiado en responder. Intenta de nuevo.'
+      ? 'Roboflow tardó demasiado en responder. Su API serverless limita la ejecución de Workflows a 20 segundos.'
       : 'No se pudo conectar con Roboflow. Comprueba tu conexión e inténtalo de nuevo.'
     response.status(502).json({ error: message })
   }
