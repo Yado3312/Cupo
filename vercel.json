@@ -2,7 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "npm ci --include=dev",
   "buildCommand": "npm run build:vercel",
-  "outputDirectory": "public",
   "functions": {
     "server.js": {
       "maxDuration": 30
