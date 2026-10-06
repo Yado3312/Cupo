@@ -152,7 +152,10 @@
 .analysis-preview img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .detection-overlay { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .detection-overlay rect { fill: #35cb7a16; stroke: #48e191; stroke-width: 4; vector-effect: non-scaling-stroke; }
+.detection-overlay rect.demo-libre { fill: #35cb7a35; stroke: #48e191; }
+.detection-overlay rect.demo-ocupado { fill: #ec9a3c35; stroke: #f0aa52; }
 .detection-overlay text { fill: white; stroke: #175e3c; stroke-width: 2px; paint-order: stroke; font: bold 18px 'DM Sans', sans-serif; }
+.simulation-overlay text { stroke: #173e2f; font-size: 25px; }
 .analysis-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; color: #fff; background: #13231bcc; font-size: 12px; }
 .spinner { width: 17px; height: 17px; border: 2px solid #ffffff5c; border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; }
 .analysis-result { display: flex; flex-direction: column; align-items: flex-start; gap: 9px; }
@@ -161,8 +164,11 @@
 .vehicle-total span { font: 500 11px 'DM Sans', sans-serif; }
 .analysis-result > p { margin: 0; color: #76847a; font-size: 10px; line-height: 1.55; }
 .analysis-result > .analysis-error { color: #b15443; }
+.simulation-label { display: inline-flex; align-items: center; min-height: 22px; padding: 0 7px; color: #8e6327; background: #f8efda; border: 1px solid #ede0bd; border-radius: 3px; font: 500 8px 'DM Mono', monospace; }
 .apply-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 34px; margin-top: 2px; padding: 0 10px; color: #fff; background: #317753; border: 0; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; }
 .apply-button:hover { background: #205e41; }
+.simulation-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 33px; margin-top: 2px; padding: 0 9px; color: #735628; background: #fbf7eb; border: 1px solid #eadfbd; border-radius: 4px; font-size: 9px; font-weight: 600; cursor: pointer; }
+.simulation-button:hover { background: #f7efd8; }
 .privacy-note { display: flex; align-items: center; gap: 6px; margin-top: 12px; padding-top: 10px; color: #89948c; border-top: 1px solid #edf0ed; font-size: 9px; }
 .privacy-note svg { flex: 0 0 auto; color: #5a9973; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }

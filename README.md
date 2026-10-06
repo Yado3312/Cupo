@@ -46,7 +46,7 @@ El servidor normaliza las imágenes subidas (incluido AVIF) a JPEG y las envía 
 
 La vista Centro o lugar puede leer la cámara disponible en el navegador y enviar un cuadro cada 10 segundos. Requiere permiso de cámara y conexión segura (`localhost` funciona para desarrollo). Para una cámara IP/RTSP o una operación 24/7 se requiere un agente de inferencia en edge/servidor; no se debe exponer la cámara directamente al navegador.
 
-El Workflow debe tener una entrada de imagen llamada `image` y devolver una salida `predictions` o `detections` con clases explícitas de cajón libre/ocupado, por ejemplo `empty parking space` y `occupied parking spot`. Por seguridad, detecciones de autos no se convierten en espacios libres. Ajusta `ROBOFLOW_WORKFLOW_IMAGE_INPUT` si la entrada tiene otro nombre y entrena/calibra el Workflow para el ángulo fijo de la cámara.
+El Workflow debe tener una entrada de imagen llamada `image` y publicar un `JsonField` llamado `predictions`, conectado a las predicciones del bloque de detección. Sus clases deben identificar cajones libres/ocupados, por ejemplo `empty parking space` y `occupied parking spot`. Por seguridad, detecciones de autos no se convierten en espacios libres. Ajusta `ROBOFLOW_WORKFLOW_IMAGE_INPUT` si la entrada tiene otro nombre y entrena/calibra el Workflow para el ángulo fijo de la cámara.
 
 La API serverless de Workflows limita cada ejecución a 20 segundos. El sondeo de cámara está espaciado a 10 segundos, pero no es un sistema de streaming de producción; para CCTV/RTSP y baja latencia, despliega Inference/WebRTC en edge o usa un despliegue dedicado.
 

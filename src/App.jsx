@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
+import { createDemoParkingOverlay } from '../parking-demo.js'
 import './App.css'
 
 const initialPlaces = [
@@ -166,6 +167,15 @@ function App() {
       setAnalysisError(error.message)
       setNotice(error.message)
     }
+  }
+
+  function showDemoSimulation() {
+    setAnalysis((current) => ({
+      ...current,
+      ...createDemoParkingOverlay(current.width, current.height),
+    }))
+    setAnalysisState('demo')
+    setNotice('Simulación de ejemplo: no es una detección real ni actualiza el mapa.')
   }
 
   function applyAnalysisToAvailability() {
@@ -560,21 +570,23 @@ function App() {
                   <div className="analysis-body">
                     <div className="analysis-preview" style={{ aspectRatio: `${analysis.width} / ${analysis.height}` }}>
                       <img src={analysis.imageUrl} alt={`Imagen analizada: ${analysis.fileName}`} />
-                      {analysisState === 'done' && <svg className="detection-overlay" viewBox={`0 0 ${analysis.width} ${analysis.height}`} preserveAspectRatio="none" aria-hidden="true">
-                        {analysis.detections.map((detection, index) => <g key={`${detection.label}-${index}`}><rect x={detection.x - detection.width / 2} y={detection.y - detection.height / 2} width={detection.width} height={detection.height} /><text x={detection.x - detection.width / 2} y={detection.y - detection.height / 2 - 5}>{detection.label} {Math.round(detection.confidence * 100)}%</text></g>)}
+                      {(analysisState === 'done' || analysisState === 'demo') && <svg className={`detection-overlay ${analysis.demo ? 'simulation-overlay' : ''}`} viewBox={`0 0 ${analysis.width} ${analysis.height}`} preserveAspectRatio="none" aria-hidden="true">
+                        {analysis.detections.map((detection, index) => <g key={`${detection.label}-${index}`}><rect className={analysis.demo ? `demo-${detection.state}` : ''} x={detection.x - detection.width / 2} y={detection.y - detection.height / 2} width={detection.width} height={detection.height} /><text x={detection.x - detection.width / 2} y={detection.y - detection.height / 2 - 5}>{analysis.demo ? detection.label : `${detection.label} ${Math.round(detection.confidence * 100)}%`}</text></g>)}
                       </svg>}
                       {analysisState === 'loading' && <div className="analysis-loading"><span className="spinner" /> Analizando con Roboflow…</div>}
                     </div>
                     <div className="analysis-result">
                       <span className="result-model"><Sparkles size={15} />{analysis.model || apiStatus.model}</span>
-                      {analysisState === 'done' ? (
+                      {analysisState === 'demo' ? (
+                        <><span className="simulation-label">SIMULACIÓN · NO ES ROBOFLOW</span><strong className="vehicle-total">{analysis.availableSpaces}<span> cajones ilustrativos</span></strong><p>Marcadores de ejemplo sobre la foto; no son detecciones reales y no cambian la disponibilidad del mapa.</p></>
+                      ) : analysisState === 'done' ? (
                         analysis.availableSpaces === null
                           ? <><strong className="vehicle-total">{analysis.vehicleCount}<span> vehículos detectados</span></strong><p>El Workflow no devolvió cajones libres/ocupados; no se actualizará el mapa.</p></>
                           : <><strong className="vehicle-total">{analysis.availableSpaces}<span> cajones libres</span></strong><p>{analysis.occupiedSpaces} ocupados detectados. Confirma la lectura para publicarla.</p><button type="button" className="apply-button" onClick={applyAnalysisToAvailability}><Check size={16} />Publicar disponibilidad</button></>
-                      ) : analysisState === 'error' ? <p className="analysis-error">{analysisError || 'No se completó el análisis.'}</p> : <p>Enviando la imagen a Roboflow…</p>}
+                      ) : analysisState === 'error' ? <><p className="analysis-error">{analysisError || 'No se completó el análisis.'}</p><button type="button" className="simulation-button" onClick={showDemoSimulation}><Crosshair size={15} />Mostrar simulación visual</button></> : <p>Enviando la imagen a Roboflow…</p>}
                     </div>
                   </div>
-                  <div className="privacy-note"><ShieldCheck size={14} />La clave permanece en el servidor. La imagen se envía a Roboflow solo para esta inferencia.</div>
+                  <div className="privacy-note"><ShieldCheck size={14} />{analysis.demo ? 'La simulación no es una lectura real ni se publica al usuario.' : 'La clave permanece en el servidor. La imagen se envía a Roboflow solo para esta inferencia.'}</div>
                 </section>
               )}
               <div className="operator-note"><ShieldCheck size={17} /><p><strong>Antes de publicar:</strong> el Workflow `cupo` debe detectar explícitamente cajones libres y ocupados para el ángulo de esta cámara. Para cámaras IP, conecta RTSP a un servicio de inferencia edge, no al navegador del operador.</p></div>

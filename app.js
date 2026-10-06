@@ -112,8 +112,11 @@ app.post('/api/analyze', upload.single('image'), async (request, response) => {
     if (!summary) {
       const outputNames = listWorkflowOutputNames(result)
       const outputsDescription = outputNames.length ? outputNames.join(', ') : 'ningún campo de salida'
+      const outputError = Array.isArray(result.outputs) && result.outputs.length === 0
+        ? 'El Workflow cupo devolvió outputs vacío. En Roboflow agrega un JsonField llamado predictions con el selector de predicciones del bloque de detección, guarda y publica el Workflow.'
+        : `El Workflow respondió, pero no encontramos conteos de cajones ni detecciones. Campos recibidos: ${outputsDescription}. Agrega un JsonField llamado predictions conectado a las predicciones del bloque de detección y publica el Workflow.`
       response.status(502).json({
-        error: `El Workflow respondió, pero no encontramos conteos de cajones ni detecciones. Campos recibidos: ${outputsDescription}.`,
+        error: outputError,
       })
       return
     }
