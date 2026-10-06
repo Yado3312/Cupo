@@ -18,7 +18,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
 
-COPY server.js image-processing.js map-links.js parking-occupancy.js ./
+COPY app.js server.js image-processing.js map-links.js parking-occupancy.js ./
 COPY --from=build /app/dist ./dist
 
 USER node

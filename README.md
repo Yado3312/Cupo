@@ -21,13 +21,13 @@ Docker Compose lee `.env` si existe. La app funciona en modo demo sin credencial
 ### Desplegar en Vercel
 
 1. Sube el repositorio a GitHub, GitLab o Bitbucket y en [Vercel](https://vercel.com/new) selecciona **Add New Project** para importarlo.
-2. Usa el preset **Other** (no Create React App). `vercel.json` lo fija y configura `npm ci --include=dev` como Install Command y `npm run build:vercel` como Build Command. Deja Output Directory sin override: Vercel sirve `public/` como assets estáticos de Express.
+2. Usa el preset **Vite**. `vercel.json` configura `npm ci --include=dev` como Install Command, `npm run build` como Build Command y `dist` como Output Directory.
 3. En **Project Settings → Environment Variables**, agrega `ROBOFLOW_API_KEY`, `ROBOFLOW_WORKSPACE`, `ROBOFLOW_WORKFLOW_ID` y `ROBOFLOW_WORKFLOW_IMAGE_INPUT`. Usa `martinalan471-s-workspace`, `cupo` e `image` para las últimas tres. No uses el prefijo `VITE_` en la clave.
 4. Asigna las variables a Production y Preview, guarda y vuelve a desplegar.
 
 También puedes desplegar desde la terminal con `npx vercel` y publicar producción con `npx vercel --prod`. Para probar localmente con el mismo enrutamiento usa `npx vercel dev` después de vincular el proyecto y cargar las variables con `npx vercel env pull`.
 
-Vercel sirve el frontend estático y ejecuta Express como Function. Las imágenes subidas se limitan a 4 MB para respetar el máximo de payload de Vercel Functions; si necesitas procesar imágenes mayores o video continuo, usa Docker en un servidor/servicio de contenedores. La cámara del navegador requiere HTTPS, que Vercel proporciona en el dominio desplegado.
+Vercel sirve el frontend estático desde `dist/` y las rutas `/api/*` mediante la Function `api/[...path].js`, que reutiliza la app Express. Las imágenes subidas se limitan a 4 MB para respetar el máximo de payload de Vercel Functions; si necesitas procesar imágenes mayores o video continuo, usa Docker en un servidor/servicio de contenedores. La cámara del navegador requiere HTTPS, que Vercel proporciona en el dominio desplegado.
 
 ### Desarrollo local
 

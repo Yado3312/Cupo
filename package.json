@@ -8,7 +8,6 @@
     "server": "node --watch server.js",
     "vite": "vite",
     "build": "vite build",
-    "build:vercel": "vite build --config vite.vercel.config.js",
     "lint": "oxlint",
     "preview": "vite preview"
   },
