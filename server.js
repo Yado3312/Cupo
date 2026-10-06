@@ -1,14 +1,21 @@
 import 'dotenv/config'
 import express from 'express'
 import multer from 'multer'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { normalizeImageForRoboflow } from './image-processing.js'
 import { resolveMapCoordinates } from './map-links.js'
-import { summarizeWorkflowResponse } from './parking-occupancy.js'
+import { listWorkflowOutputNames, summarizeWorkflowResponse } from './parking-occupancy.js'
 
 const app = express()
+const appDirectory = path.dirname(fileURLToPath(import.meta.url))
+const distDirectory = path.join(appDirectory, 'dist')
+
 app.use(express.json({ limit: '16kb' }))
+
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 4 * 1024 * 1024 },
   fileFilter: (_request, file, callback) => {
     if (file.mimetype.startsWith('image/')) {
       callback(null, true)
@@ -54,6 +61,14 @@ app.post('/api/analyze', upload.single('image'), async (request, response) => {
     return
   }
 
+  let jpegBuffer
+  try {
+    jpegBuffer = await normalizeImageForRoboflow(request.file.buffer)
+  } catch {
+    response.status(415).json({ error: 'No se pudo decodificar la imagen. Prueba con JPG, PNG, WebP o AVIF válido.' })
+    return
+  }
+
   const workflowPath = [workspace, workflowId].map(encodeURIComponent).join('/')
 
   try {
@@ -67,23 +82,40 @@ app.post('/api/analyze', upload.single('image'), async (request, response) => {
         inputs: {
           [imageInput]: {
             type: 'base64',
-            value: request.file.buffer.toString('base64'),
+            value: jpegBuffer.toString('base64'),
           },
         },
       }),
       signal: AbortSignal.timeout(30_000),
     })
 
-    const result = await inferenceResponse.json()
+    const responseText = await inferenceResponse.text()
+    let result = {}
+    try {
+      result = JSON.parse(responseText)
+    } catch {
+      result = {}
+    }
 
     if (!inferenceResponse.ok) {
-      response.status(inferenceResponse.status).json({ error: 'Roboflow rechazó la ejecución del Workflow. Verifica la API key, el nombre del workspace/workflow y sus créditos.' })
+      const remoteMessage = [result.error, result.message, result.detail]
+        .find((value) => typeof value === 'string' && value.trim())
+      const safeMessage = (remoteMessage || 'Revisa la API key, el workspace, el Workflow y sus créditos.')
+        .replaceAll(process.env.ROBOFLOW_API_KEY, '[oculta]')
+        .slice(0, 240)
+      response.status(inferenceResponse.status).json({
+        error: `Roboflow respondió HTTP ${inferenceResponse.status}: ${safeMessage}`,
+      })
       return
     }
 
     const summary = summarizeWorkflowResponse(result)
     if (!summary) {
-      response.status(502).json({ error: 'El Workflow respondió, pero no encontramos una salida de detecciones. Configura una salida llamada predictions o detections.' })
+      const outputNames = listWorkflowOutputNames(result)
+      const outputsDescription = outputNames.length ? outputNames.join(', ') : 'ningún campo de salida'
+      response.status(502).json({
+        error: `El Workflow respondió, pero no encontramos conteos de cajones ni detecciones. Campos recibidos: ${outputsDescription}.`,
+      })
       return
     }
 
@@ -99,15 +131,27 @@ app.post('/api/analyze', upload.single('image'), async (request, response) => {
   }
 })
 
+app.use(express.static(distDirectory))
+app.use((request, response, next) => {
+  if (request.method !== 'GET' || request.path.startsWith('/api/')) {
+    next()
+    return
+  }
+
+  response.sendFile(path.join(distDirectory, 'index.html'), (error) => {
+    if (error) next(error)
+  })
+})
+
 app.use((error, _request, response, _next) => {
   if (error instanceof multer.MulterError && error.code === 'LIMIT_FILE_SIZE') {
-    response.status(413).json({ error: 'La imagen supera el límite de 10 MB.' })
+    response.status(413).json({ error: 'La imagen supera el límite de 4 MB.' })
     return
   }
 
   response.status(400).json({ error: error.message || 'No se pudo procesar el archivo.' })
 })
 
-app.listen(port, () => {
-  console.log(`Cupo API disponible en http://localhost:${port}`)
+app.listen(port, '0.0.0.0', () => {
+  console.log(`Cupo disponible en http://localhost:${port}`)
 })

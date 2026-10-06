@@ -6,6 +6,31 @@ Incluye dos vistas de demostración con el selector superior: **Usuario** consul
 
 ## Iniciar
 
+### Con Docker (macOS, Linux y Windows)
+
+Instala Docker Desktop en macOS/Windows o Docker Engine con el plugin Compose en Linux. Desde la carpeta del proyecto ejecuta:
+
+```bash
+docker compose up --build -d
+```
+
+Abre `http://localhost:3000`. La primera ejecución compila la interfaz y crea el contenedor; no necesitas instalar Node.js en la máquina. Para ver los logs usa `docker compose logs -f cupo`; para detenerlo usa `docker compose down`.
+
+Docker Compose lee `.env` si existe. La app funciona en modo demo sin credenciales; para Roboflow copia `.env.example` a `.env`, agrega tu `ROBOFLOW_API_KEY` y vuelve a ejecutar `docker compose up --build -d`. Cambia `CUPO_PORT` en `.env` si el puerto 3000 ya está ocupado. La clave no se copia a la imagen Docker.
+
+### Desplegar en Vercel
+
+1. Sube el repositorio a GitHub, GitLab o Bitbucket y en [Vercel](https://vercel.com/new) selecciona **Add New Project** para importarlo.
+2. Deja que Vercel detecte Express. `vercel.json` define `npm run build:vercel` y la carpeta de salida `public`; si Vercel conserva valores manuales, usa esos mismos valores en **Build & Development Settings**.
+3. En **Project Settings → Environment Variables**, agrega `ROBOFLOW_API_KEY`, `ROBOFLOW_WORKSPACE`, `ROBOFLOW_WORKFLOW_ID` y `ROBOFLOW_WORKFLOW_IMAGE_INPUT`. Usa `martinalan471-s-workspace`, `cupo` e `image` para las últimas tres. No uses el prefijo `VITE_` en la clave.
+4. Asigna las variables a Production y Preview, guarda y vuelve a desplegar.
+
+También puedes desplegar desde la terminal con `npx vercel` y publicar producción con `npx vercel --prod`. Para probar localmente con el mismo enrutamiento usa `npx vercel dev` después de vincular el proyecto y cargar las variables con `npx vercel env pull`.
+
+Vercel sirve el frontend estático y ejecuta Express como Function. Las imágenes subidas se limitan a 4 MB para respetar el máximo de payload de Vercel Functions; si necesitas procesar imágenes mayores o video continuo, usa Docker en un servidor/servicio de contenedores. La cámara del navegador requiere HTTPS, que Vercel proporciona en el dominio desplegado.
+
+### Desarrollo local
+
 ```bash
 npm install
 npm run dev
@@ -17,7 +42,7 @@ Abre la URL que muestra Vite, normalmente `http://localhost:5173`. En Centro o l
 
 El `.env` local ya tiene configurado el workspace `martinalan471-s-workspace`, el Workflow `cupo` y su entrada `image`. `.env` está ignorado por Git. Si reemplazas la clave, añádela en `ROBOFLOW_API_KEY` y reinicia el servidor.
 
-El servidor envía los cuadros como base64 a `POST https://serverless.roboflow.com/infer/workflows/{workspace}/{workflow}`, con autorización Bearer. La clave solo se lee en el servidor y nunca se devuelve al frontend. Las imágenes se limitan a 10 MB.
+El servidor normaliza las imágenes subidas (incluido AVIF) a JPEG y las envía como base64 a `POST https://serverless.roboflow.com/infer/workflows/{workspace}/{workflow}`, con autorización Bearer. La clave solo se lee en el servidor y nunca se devuelve al frontend. Las imágenes se limitan a 4 MB; los errores de decodificación y las respuestas HTTP de Roboflow se muestran en el panel sin revelar la clave.
 
 La vista Centro o lugar puede leer la cámara disponible en el navegador y enviar un cuadro cada 10 segundos. Requiere permiso de cámara y conexión segura (`localhost` funciona para desarrollo). Para una cámara IP/RTSP o una operación 24/7 se requiere un agente de inferencia en edge/servidor; no se debe exponer la cámara directamente al navegador.
 

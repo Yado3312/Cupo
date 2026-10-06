@@ -84,6 +84,7 @@ function App() {
   const [apiStatus, setApiStatus] = useState({ configured: false, model: 'martinalan471-s-workspace/workflows/cupo' })
   const [analysis, setAnalysis] = useState(null)
   const [analysisState, setAnalysisState] = useState('idle')
+  const [analysisError, setAnalysisError] = useState('')
   const [notice, setNotice] = useState('')
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(false)
   const [cameraActive, setCameraActive] = useState(false)
@@ -149,6 +150,7 @@ function App() {
 
     setAnalysis({ imageUrl, fileName: file.name, ...dimensions, detections: [], vehicleCount: 0 })
     setAnalysisState('loading')
+    setAnalysisError('')
 
     const formData = new FormData()
     formData.append('image', file)
@@ -161,6 +163,7 @@ function App() {
       setAnalysisState('done')
     } catch (error) {
       setAnalysisState('error')
+      setAnalysisError(error.message)
       setNotice(error.message)
     }
   }
@@ -552,7 +555,7 @@ function App() {
                 <section className="analysis-section" aria-live="polite">
                   <div className="analysis-heading">
                     <div><span className="eyebrow">INFERENCIA CON ROBOFLOW</span><h3>Resultado para {selectedPlace.name}</h3></div>
-                    <button type="button" className="icon-button" aria-label="Cerrar análisis" onClick={() => { URL.revokeObjectURL(analysis.imageUrl); setAnalysis(null); setAnalysisState('idle') }}><X size={18} /></button>
+                    <button type="button" className="icon-button" aria-label="Cerrar análisis" onClick={() => { URL.revokeObjectURL(analysis.imageUrl); setAnalysis(null); setAnalysisState('idle'); setAnalysisError('') }}><X size={18} /></button>
                   </div>
                   <div className="analysis-body">
                     <div className="analysis-preview" style={{ aspectRatio: `${analysis.width} / ${analysis.height}` }}>
@@ -568,7 +571,7 @@ function App() {
                         analysis.availableSpaces === null
                           ? <><strong className="vehicle-total">{analysis.vehicleCount}<span> vehículos detectados</span></strong><p>El Workflow no devolvió cajones libres/ocupados; no se actualizará el mapa.</p></>
                           : <><strong className="vehicle-total">{analysis.availableSpaces}<span> cajones libres</span></strong><p>{analysis.occupiedSpaces} ocupados detectados. Confirma la lectura para publicarla.</p><button type="button" className="apply-button" onClick={applyAnalysisToAvailability}><Check size={16} />Publicar disponibilidad</button></>
-                      ) : analysisState === 'error' ? <p className="analysis-error">No se completó el análisis. Verifica la configuración del Workflow.</p> : <p>Enviando la imagen a Roboflow…</p>}
+                      ) : analysisState === 'error' ? <p className="analysis-error">{analysisError || 'No se completó el análisis.'}</p> : <p>Enviando la imagen a Roboflow…</p>}
                     </div>
                   </div>
                   <div className="privacy-note"><ShieldCheck size={14} />La clave permanece en el servidor. La imagen se envía a Roboflow solo para esta inferencia.</div>

@@ -8,6 +8,7 @@
     "server": "node --watch server.js",
     "vite": "vite",
     "build": "vite build",
+    "build:vercel": "vite build --config vite.vercel.config.js",
     "lint": "oxlint",
     "preview": "vite preview"
   },
@@ -19,7 +20,8 @@
     "multer": "^2.4.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-leaflet": "^5.0.0"
+    "react-leaflet": "^5.0.0",
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
