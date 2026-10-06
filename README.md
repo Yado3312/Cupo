@@ -21,7 +21,7 @@ Docker Compose lee `.env` si existe. La app funciona en modo demo sin credencial
 ### Desplegar en Vercel
 
 1. Sube el repositorio a GitHub, GitLab o Bitbucket y en [Vercel](https://vercel.com/new) selecciona **Add New Project** para importarlo.
-2. Deja que Vercel detecte Express. `vercel.json` configura `npm ci --include=dev` como Install Command y `npm run build:vercel` como Build Command. No configures un Output Directory: Vercel sirve `public/` como assets estáticos de Express.
+2. Usa el preset **Other** (no Create React App). `vercel.json` lo fija y configura `npm ci --include=dev` como Install Command y `npm run build:vercel` como Build Command. Deja Output Directory sin override: Vercel sirve `public/` como assets estáticos de Express.
 3. En **Project Settings → Environment Variables**, agrega `ROBOFLOW_API_KEY`, `ROBOFLOW_WORKSPACE`, `ROBOFLOW_WORKFLOW_ID` y `ROBOFLOW_WORKFLOW_IMAGE_INPUT`. Usa `martinalan471-s-workspace`, `cupo` e `image` para las últimas tres. No uses el prefijo `VITE_` en la clave.
 4. Asigna las variables a Production y Preview, guarda y vuelve a desplegar.
 
