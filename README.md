@@ -22,7 +22,7 @@ Docker Compose lee `.env` si existe. La app funciona en modo demo sin credencial
 
 1. Sube el repositorio a GitHub, GitLab o Bitbucket y en [Vercel](https://vercel.com/new) selecciona **Add New Project** para importarlo.
 2. Usa el preset **Vite**. `vercel.json` configura `npm ci --include=dev` como Install Command, `npm run build` como Build Command y `dist` como Output Directory.
-3. En **Project Settings → Environment Variables**, agrega `ROBOFLOW_API_KEY`, `ROBOFLOW_WORKSPACE`, `ROBOFLOW_WORKFLOW_ID` y `ROBOFLOW_WORKFLOW_IMAGE_INPUT`. Usa `martinalan471-s-workspace`, `cupo` e `image` para las últimas tres. No uses el prefijo `VITE_` en la clave.
+3. En **Project Settings → Environment Variables**, agrega `ROBOFLOW_API_KEY`, `ROBOFLOW_WORKSPACE`, `ROBOFLOW_WORKFLOW_ID` y `ROBOFLOW_WORKFLOW_IMAGE_INPUT`. Usa `martinalan471-s-workspace`, `custom-workflow` e `image` para las últimas tres. No uses el prefijo `VITE_` en la clave.
 4. Asigna las variables a Production y Preview, guarda y vuelve a desplegar.
 
 También puedes desplegar desde la terminal con `npx vercel` y publicar producción con `npx vercel --prod`. Para probar localmente con el mismo enrutamiento usa `npx vercel dev` después de vincular el proyecto y cargar las variables con `npx vercel env pull`.
@@ -40,13 +40,13 @@ Abre la URL que muestra Vite, normalmente `http://localhost:5173`. En Centro o l
 
 ## Configurar Roboflow Workflow
 
-El `.env` local ya tiene configurado el workspace `martinalan471-s-workspace`, el Workflow `cupo` y su entrada `image`. `.env` está ignorado por Git. Si reemplazas la clave, añádela en `ROBOFLOW_API_KEY` y reinicia el servidor.
+El `.env` local ya tiene configurado el workspace `martinalan471-s-workspace`, el Workflow `custom-workflow` y su entrada `image`. `.env` está ignorado por Git. Si reemplazas la clave, añádela en `ROBOFLOW_API_KEY` y reinicia el servidor.
 
-El servidor normaliza las imágenes subidas (incluido AVIF) a JPEG y las envía como base64 a `POST https://serverless.roboflow.com/infer/workflows/{workspace}/{workflow}`, con autorización Bearer. La clave solo se lee en el servidor y nunca se devuelve al frontend. Las imágenes se limitan a 4 MB; los errores de decodificación y las respuestas HTTP de Roboflow se muestran en el panel sin revelar la clave.
+El servidor normaliza las imágenes subidas (incluido AVIF) a JPEG y las envía como base64 a `POST https://serverless.roboflow.com/{workspace}/workflows/{workflow}`, con `Authorization: Bearer ROBOFLOW_API_KEY`. El ejemplo de Roboflow usa `type: "url"` para imágenes publicadas en internet; aquí se usa `type: "base64"` porque las fotos y capturas de cámara son archivos locales. La clave solo se lee en el servidor y nunca se devuelve al frontend. Las imágenes se limitan a 4 MB; los errores de decodificación y las respuestas HTTP de Roboflow se muestran en el panel sin revelar la clave.
 
 La vista Centro o lugar puede leer la cámara disponible en el navegador y enviar un cuadro cada 10 segundos. Requiere permiso de cámara y conexión segura (`localhost` funciona para desarrollo). Para una cámara IP/RTSP o una operación 24/7 se requiere un agente de inferencia en edge/servidor; no se debe exponer la cámara directamente al navegador.
 
-El Workflow debe tener una entrada de imagen llamada `image` y publicar un `JsonField` llamado `predictions`, conectado a las predicciones del bloque de detección. Sus clases deben identificar cajones libres/ocupados, por ejemplo `empty parking space` y `occupied parking spot`. Por seguridad, detecciones de autos no se convierten en espacios libres. Ajusta `ROBOFLOW_WORKFLOW_IMAGE_INPUT` si la entrada tiene otro nombre y entrena/calibra el Workflow para el ángulo fijo de la cámara.
+El Workflow debe tener una entrada de imagen llamada `image`. El `custom-workflow` actual devuelve `free_count`, `occupied_count` y `vehicle_predictions`; la app toma los dos conteos para la disponibilidad y usa las predicciones para dibujar detecciones. Por seguridad, las detecciones de autos no se convierten en espacios libres. Ajusta `ROBOFLOW_WORKFLOW_IMAGE_INPUT` si la entrada tiene otro nombre y calibra el Workflow para el ángulo fijo de la cámara.
 
 La API serverless de Workflows limita cada ejecución a 20 segundos. El sondeo de cámara está espaciado a 10 segundos, pero no es un sistema de streaming de producción; para CCTV/RTSP y baja latencia, despliega Inference/WebRTC en edge o usa un despliegue dedicado.
 

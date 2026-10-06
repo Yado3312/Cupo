@@ -82,7 +82,7 @@ function App() {
   const [selectedId, setSelectedId] = useState(1)
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState('distance')
-  const [apiStatus, setApiStatus] = useState({ configured: false, model: 'martinalan471-s-workspace/workflows/cupo' })
+  const [apiStatus, setApiStatus] = useState({ configured: false, model: 'martinalan471-s-workspace/workflows/custom-workflow' })
   const [analysis, setAnalysis] = useState(null)
   const [analysisState, setAnalysisState] = useState('idle')
   const [analysisError, setAnalysisError] = useState('')
@@ -117,7 +117,7 @@ function App() {
     fetch('/api/status')
       .then((response) => response.json())
       .then(setApiStatus)
-      .catch(() => setApiStatus({ configured: false, model: 'martinalan471-s-workspace/workflows/cupo' }))
+      .catch(() => setApiStatus({ configured: false, model: 'martinalan471-s-workspace/workflows/custom-workflow' }))
   }, [])
 
   useEffect(() => {
@@ -589,7 +589,7 @@ function App() {
                   <div className="privacy-note"><ShieldCheck size={14} />{analysis.demo ? 'La simulación no es una lectura real ni se publica al usuario.' : 'La clave permanece en el servidor. La imagen se envía a Roboflow solo para esta inferencia.'}</div>
                 </section>
               )}
-              <div className="operator-note"><ShieldCheck size={17} /><p><strong>Antes de publicar:</strong> el Workflow `cupo` debe detectar explícitamente cajones libres y ocupados para el ángulo de esta cámara. Para cámaras IP, conecta RTSP a un servicio de inferencia edge, no al navegador del operador.</p></div>
+              <div className="operator-note"><ShieldCheck size={17} /><p><strong>Antes de publicar:</strong> el Workflow `custom-workflow` debe detectar explícitamente cajones libres y ocupados para el ángulo de esta cámara. Para cámaras IP, conecta RTSP a un servicio de inferencia edge, no al navegador del operador.</p></div>
               <p className="account-limit"><CircleHelp size={14} />Este prototipo cambia de vista en el mismo navegador. Inicio de sesión, permisos por establecimiento y sincronización entre dispositivos requieren autenticación y una base de datos.</p>
             </section>
           )}

@@ -46,6 +46,7 @@ const occupiedSpaceClasses = new Set([
 export function summarizePredictions(predictions) {
   const normalized = predictions.map((prediction) => ({
     ...prediction,
+    label: prediction.label || prediction.class,
     normalizedClass: String(prediction.class).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''),
   }))
   const availableSpaces = normalized.filter(({ normalizedClass }) => availableSpaceClasses.has(normalizedClass))
@@ -119,7 +120,7 @@ function findSpaceCounts(value, counts = { available: null, occupied: null, tota
     const numericValue = typeof fieldValue === 'number' ? fieldValue : null
 
     if (numericValue !== null && Number.isFinite(numericValue) && numericValue >= 0) {
-      if (['available', 'available_space', 'available_spaces', 'available_parking_spaces', 'available_parking_slots', 'available_slots', 'available_spot', 'available_spots', 'free_space', 'free_spaces', 'free_parking_spaces', 'free_parking_slots', 'free_slots', 'free_spots', 'vacant_spaces', 'vacant_spots', 'empty_spaces', 'empty_slots', 'spaces_available', 'spaces_free', 'parking_spaces_available', 'parking_slots_available', 'espacios_disponibles', 'espacios_libres', 'cajones_disponibles', 'cajones_libres', 'lugares_disponibles', 'lugares_libres'].includes(normalizedName)) {
+      if (['available', 'free', 'available_space', 'available_spaces', 'available_parking_spaces', 'available_parking_slots', 'available_slots', 'available_spot', 'available_spots', 'free_space', 'free_spaces', 'free_parking_spaces', 'free_parking_slots', 'free_slots', 'free_spots', 'vacant_spaces', 'vacant_spots', 'empty_spaces', 'empty_slots', 'spaces_available', 'spaces_free', 'parking_spaces_available', 'parking_slots_available', 'espacios_disponibles', 'espacios_libres', 'cajones_disponibles', 'cajones_libres', 'lugares_disponibles', 'lugares_libres'].includes(normalizedName)) {
         counts.available ??= Math.floor(numericValue)
       } else if (['occupied', 'occupied_space', 'occupied_spaces', 'occupied_parking_spaces', 'occupied_parking_slots', 'occupied_slots', 'occupied_spots', 'used_spaces', 'used_slots', 'used_spots', 'spaces_occupied', 'parking_spaces_occupied', 'parking_slots_occupied', 'espacios_ocupados', 'cajones_ocupados', 'lugares_ocupados'].includes(normalizedName)) {
         counts.occupied ??= Math.floor(numericValue)
@@ -145,22 +146,22 @@ export function listWorkflowOutputNames(response) {
 export function summarizeWorkflowResponse(response) {
   const outputs = response?.outputs ?? response
   const predictions = findPredictions(outputs)
-  if (predictions) return summarizePredictions(predictions)
+  const predictionSummary = predictions ? summarizePredictions(predictions) : null
 
   const counts = findSpaceCounts(outputs)
-  const availableSpaces = counts.available ?? (counts.total !== null && counts.occupied !== null
+  const availableSpaces = counts.available ?? predictionSummary?.availableSpaces ?? (counts.total !== null && counts.occupied !== null
     ? Math.max(0, counts.total - counts.occupied)
     : null)
-  const occupiedSpaces = counts.occupied ?? (counts.total !== null && availableSpaces !== null
+  const occupiedSpaces = counts.occupied ?? predictionSummary?.occupiedSpaces ?? (counts.total !== null && availableSpaces !== null
     ? Math.max(0, counts.total - availableSpaces)
     : null)
 
-  if (availableSpaces === null && occupiedSpaces === null) return null
+  if (availableSpaces === null && occupiedSpaces === null) return predictionSummary
 
   return {
-    vehicleCount: 0,
+    vehicleCount: predictionSummary?.vehicleCount ?? 0,
     availableSpaces,
     occupiedSpaces,
-    detections: [],
+    detections: predictionSummary?.detections ?? [],
   }
 }

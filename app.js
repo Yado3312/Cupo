@@ -27,7 +27,7 @@ const upload = multer({
 })
 
 const workspace = process.env.ROBOFLOW_WORKSPACE || 'martinalan471-s-workspace'
-const workflowId = process.env.ROBOFLOW_WORKFLOW_ID || 'cupo'
+const workflowId = process.env.ROBOFLOW_WORKFLOW_ID || 'custom-workflow'
 const imageInput = process.env.ROBOFLOW_WORKFLOW_IMAGE_INPUT || 'image'
 
 app.get('/api/status', (_request, response) => {
@@ -68,10 +68,10 @@ app.post('/api/analyze', upload.single('image'), async (request, response) => {
     return
   }
 
-  const workflowPath = [workspace, workflowId].map(encodeURIComponent).join('/')
+  const workflowUrl = `https://serverless.roboflow.com/${encodeURIComponent(workspace)}/workflows/${encodeURIComponent(workflowId)}`
 
   try {
-    const inferenceResponse = await fetch(`https://serverless.roboflow.com/infer/workflows/${workflowPath}`, {
+    const inferenceResponse = await fetch(workflowUrl, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${process.env.ROBOFLOW_API_KEY}`,
@@ -113,8 +113,8 @@ app.post('/api/analyze', upload.single('image'), async (request, response) => {
       const outputNames = listWorkflowOutputNames(result)
       const outputsDescription = outputNames.length ? outputNames.join(', ') : 'ningún campo de salida'
       const outputError = Array.isArray(result.outputs) && result.outputs.length === 0
-        ? 'El Workflow cupo devolvió outputs vacío. En Roboflow agrega un JsonField llamado predictions con el selector de predicciones del bloque de detección, guarda y publica el Workflow.'
-        : `El Workflow respondió, pero no encontramos conteos de cajones ni detecciones. Campos recibidos: ${outputsDescription}. Agrega un JsonField llamado predictions conectado a las predicciones del bloque de detección y publica el Workflow.`
+        ? `El Workflow ${workflowId} devolvió outputs vacío. Revisa sus salidas y publica el Workflow en Roboflow.`
+        : `El Workflow respondió, pero no encontramos conteos de cajones ni detecciones. Campos recibidos: ${outputsDescription}. Publica free_count y occupied_count o predicciones de cajones libres y ocupados.`
       response.status(502).json({
         error: outputError,
       })
